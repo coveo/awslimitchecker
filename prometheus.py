@@ -9,13 +9,11 @@ from awslimitchecker.limit import AwsLimitUsage, AwsLimit
 from prometheus_client import start_http_server, Summary, Gauge
 
 CONFIG_PATH = '/var/awslimitchecker_config/'
-PORT_ENV = 'ALC_PORT'
 PORT_FILE = 'port'
-INTERVAL_ENV = 'ALC_INTERVAL'
 INTERVAL_FILE = 'refresh_interval'
-REGIONS_ENV = 'ALC_REGIONS'
 REGIONS_FILE = 'regions'
 OVERRIDES_FILE = 'limit_overrides'
+SKIPPED_SERVICES_FILE = 'skipped_services'
 REQUEST_TIME = Summary(
     'update_processing_seconds',
     'Time spent querying aws for limits'
@@ -51,11 +49,12 @@ class _Limit_Override(object):
 def main():
     logger = logging.getLogger()
     logger.setLevel(logging.ERROR)
-    port, interval, regions, overrides = _get_configs()
+    port, interval, regions, overrides, skipped_services = _get_configs()
 
     checkers = {}
     for region in regions:
         checkers[region] = AwsLimitChecker(region=region)
+        checkers[region].remove_services(skipped_services)
         for override in (override for override in overrides if override.region == region):
             checkers[region].set_limit_override(override.service, override.limit_name, override.value)
 
@@ -125,21 +124,22 @@ def gauge(path: str, extra_labels: List[str] = None) -> Gauge:
     return g
 
 
-def _read_config(file_name: str, env_var: str, default: str) -> str:
+def _read_config(file_name: str, default: str) -> str:
     config_file = Path(CONFIG_PATH + file_name)
     if config_file.is_file():
         return config_file.read_text()
     else:
-        return os.getenv(env_var, default)
+        return default
 
 
 def _get_configs() -> (int, int, List[str], List[_Limit_Override]):
     """Configs are either in the /var/awslimitchecker_config folder or in the environment variables"""
-    port = int(_read_config(PORT_FILE, PORT_ENV, '8080'))
-    interval = int(_read_config(INTERVAL_FILE, INTERVAL_ENV, '1800'))
-    regions = _read_config(REGIONS_FILE, REGIONS_ENV, 'us-east-1,us-west-2').split(',')
-    overrides = {_Limit_Override(item) for item in _read_config(OVERRIDES_FILE, '', '').split('\n') if '=' in item}
-    return port, interval, regions, overrides
+    port = int(_read_config(PORT_FILE, '8080'))
+    interval = int(_read_config(INTERVAL_FILE, '1800'))
+    regions = filter(None, _read_config(REGIONS_FILE, 'us-east-1,us-west-2').split(','))
+    overrides = {_Limit_Override(item) for item in _read_config(OVERRIDES_FILE, '').split('\n') if '=' in item}
+    skipped_services = filter(None, _read_config(SKIPPED_SERVICES_FILE, '').split(','))
+    return port, interval, list(regions), overrides, list(skipped_services)
 
 
 if __name__ == '__main__':
