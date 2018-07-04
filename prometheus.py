@@ -53,7 +53,7 @@ def main():
 
     checkers = {}
     for region in regions:
-        checkers[region] = AwsLimitChecker(region=region)
+        checkers[region] = AwsLimitChecker(region=region, ta_refresh_mode=3600)
         checkers[region].remove_services(skipped_services)
         for override in (override for override in overrides if override.region == region):
             checkers[region].set_limit_override(override.service, override.limit_name, override.value)
