@@ -551,6 +551,116 @@ class VPC(object):
         ]
     }
 
+    test_find_usage_network_interfaces = {
+        'NetworkInterfaces': [
+            {
+                'Association': {
+                    'AllocationId': 'allocation-123',
+                    'AssociationId': 'association-123',
+                    'IpOwnerId': '123456789012',
+                    'PublicDnsName': 'string',
+                    'PublicIp': '50.0.0.0'
+                },
+                'Attachment': {
+                    'AttachTime': datetime(2015, 1, 1),
+                    'AttachmentId': 'eni-123',
+                    'DeleteOnTermination': True,
+                    'DeviceIndex': 123,
+                    'InstanceId': 'i-123',
+                    'InstanceOwnerId': '123456789012',
+                    'Status': 'attaching'
+                },
+                'AvailabilityZone': 'us-east-2a',
+                'Description': 'NetworkInface',
+                'Groups': [
+                    {
+                        'GroupName': 'groupName',
+                        'GroupId': 'sg-123'
+                    },
+                ],
+                'InterfaceType': 'interface',
+                'Ipv6Addresses': [],
+                'MacAddress': 'address',
+                'NetworkInterfaceId': 'eni-123',
+                'OwnerId': 'string',
+                'PrivateDnsName': 'string',
+                'PrivateIpAddress': 'string',
+                'PrivateIpAddresses': [
+                    {
+                        'Association': {
+                            'AllocationId': 'allocation-123',
+                            'AssociationId': 'association-123',
+                            'IpOwnerId': '123456789012',
+                            'PublicDnsName': 'string',
+                            'PublicIp': '10.0.0.0'
+                        },
+                        'Primary': True,
+                        'PrivateDnsName': 'string',
+                        'PrivateIpAddress': 'string'
+                    },
+                ],
+                'RequesterId': '123456789012',
+                'RequesterManaged': True,
+                'SourceDestCheck': True,
+                'Status': 'available',
+                'SubnetId': 'subnet-123',
+                'TagSet': [
+                    {
+                        'Key': 'tagkey',
+                        'Value': 'tagvalue'
+                    },
+                ],
+                'VpcId': 'string'
+            }
+        ],
+        'ResponseMetadata': {
+            'HTTPStatusCode': 200,
+            'RequestId': '9cc96e79-3ace-43c2-8a5f-fa1e41017dc0'
+        }
+    }
+
+    test_update_limits_from_api_high_max_instances = {
+        'ResponseMetadata': {
+            'HTTPStatusCode': 200,
+            'RequestId': '16b85906-ab0d-4134-b8bb-df3e6120c6c7'
+        },
+        'AccountAttributes': [
+            {
+                'AttributeName': 'max-instances',
+                'AttributeValues': [
+                    {
+                        'AttributeValue': '400'
+                    }
+                ]
+            }
+        ]
+    }
+
+    test_update_limits_from_api_low_max_instances = {
+        'ResponseMetadata': {
+            'HTTPStatusCode': 200,
+            'RequestId': '16b85906-ab0d-4134-b8bb-df3e6120c6c7'
+        },
+        'AccountAttributes': [
+            {
+                'AttributeName': 'max-instances',
+                'AttributeValues': [
+                    {
+                        'AttributeValue': '50'
+                    }
+                ]
+            },
+            {
+                'AttributeName': 'something-else',
+                'AttributeValues': [
+                    {
+                        'AttributeValue': '1'
+                    }
+                ]
+            }
+        ]
+    }
+
 
 class RDS(object):
     test_find_usage_instances = []
@@ -1195,6 +1305,7 @@ class ELB(object):
                     'ListenerDescriptions': [
                         {'foo': 'bar'},
                     ],
+                    'Instances': []
                 },
                 {
                     'LoadBalancerName': 'elb-2',
@@ -1202,6 +1313,12 @@ class ELB(object):
                         {'foo': 'bar'},
                         {'foo': 'bar'},
                     ],
+                    'Instances': [
+                        {'InstanceId': 'i-1'},
+                        {'InstanceId': 'i-2'},
+                        {'InstanceId': 'i-3'},
+                        {'InstanceId': 'i-4'},
+                    ]
                 },
                 {
                     'LoadBalancerName': 'elb-3',
@@ -1210,6 +1327,7 @@ class ELB(object):
                         {'foo': 'bar'},
                         {'foo': 'bar'},
                     ],
+                    'Instances': [{'InstanceId': 'i-5'}]
                 },
                 {
                     'LoadBalancerName': 'elb-4',
@@ -1221,7 +1339,11 @@ class ELB(object):
                         {'foo': 'bar'},
                         {'foo': 'bar'},
                     ],
-                },
+                    'Instances': [
+                        {'InstanceId': 'i-6'},
+                        {'InstanceId': 'i-7'}
+                    ]
+                }
             ],
         }
 
@@ -1241,7 +1363,8 @@ class ELB(object):
             {'Max': '3', 'Name': 'classic-load-balancers'},
             {'Max': '5', 'Name': 'classic-listeners'},
             {'Name': 'invalid', 'Max': '99'},  # test invalid name
-            {'Name': 'classic-listeners'}  # test no Max
+            {'Name': 'classic-listeners'},  # test no Max
+            {'Name': 'classic-registered-instances', 'Max': '1800'}
         ]
     }
 
@@ -1264,7 +1387,10 @@ class ELB(object):
             {'Max': '9', 'Name': 'listeners-per-application-load-balancer'},
             {'Max': '10', 'Name': 'rules-per-application-load-balancer'},
             {'Name': 'invalid', 'Max': '99'},  # test invalid name
-            {'Name': 'target-groups'}  # test no Max
+            {'Name': 'target-groups'},  # test no Max
+            {'Name': 'listeners-per-network-load-balancer', 'Max': '100'},
+            {'Name': 'network-load-balancers', 'Max': '40'},
+            {'Name': 'targets-per-network-load-balancer', 'Max': '2'},
         ]
     }
 
@@ -1272,11 +1398,18 @@ class ELB(object):
         'LoadBalancers': [
             {
                 'LoadBalancerName': 'lb1',
-                'LoadBalancerArn': 'lb-arn1'
+                'LoadBalancerArn': 'lb-arn1',
+                'Type': 'application'
+            },
+            {
+                'LoadBalancerName': 'lb3',
+                'LoadBalancerArn': 'lb-arn3',
+                'Type': 'network'
             },
             {
                 'LoadBalancerName': 'lb2',
-                'LoadBalancerArn': 'lb-arn2'
+                'LoadBalancerArn': 'lb-arn2',
+                'Type': 'application'
             }
         ]
     }
@@ -1298,15 +1431,57 @@ class ELB(object):
         ]
     }
 
-    test_usage_elbv2_listeners = {
+    test_usage_alb_listeners = {
         'Listeners': [
-            {'ListenerArn': 'listener1'},
-            {'ListenerArn': 'listener2'},
-            {'ListenerArn': 'listener3'},
+            {
+                'ListenerArn': 'listener1',
+                'Certificates': []
+            },
+            {
+                'ListenerArn': 'listener2',
+                'Certificates': [
+                    {
+                        'CertificateArn': 'cert1',
+                        'IsDefault': True
+                    },
+                    {
+                        'CertificateArn': 'cert2',
+                        'IsDefault': False
+                    },
+                    {
+                        'CertificateArn': 'cert3',
+                        'IsDefault': True
+                    }
+                ]
+            },
+            {
+                'ListenerArn': 'listener3',
+                'Certificates': [
+                    {
+                        'CertificateArn': 'cert4',
+                        'IsDefault': False
+                    },
+                    {
+                        'CertificateArn': 'cert5',
+                        'IsDefault': False
+                    },
+                    {
+                        'CertificateArn': 'cert6',
+                        'IsDefault': True
+                    }
+                ]
+            },
         ]
     }
 
-    test_usage_elbv2_rules = [
+    test_usage_nlb_listeners = {
+        'Listeners': [
+            {'ListenerArn': 'listenern1'},
+            {'ListenerArn': 'listenern2'}
+        ]
+    }
+
+    test_usage_alb_rules = [
         {
             'Rules': [
                 {'RuleArn': 'listener1rule1'},
@@ -1327,6 +1502,22 @@ class ELB(object):
             ]
         }
     ]
+
+
+class Lambda(object):
+    test_lambda_response = {
+        "AccountLimit": {
+            "CodeSizeUnzipped": 262144000,
+            "UnreservedConcurrentExecutions": 1000,
+            "ConcurrentExecutions": 1000,
+            "CodeSizeZipped": 52428800,
+            "TotalCodeSize": 80530636800
+        },
+        "AccountUsage": {
+            "FunctionCount": 12,
+            "TotalCodeSize": 2167198
+        }
+    }
 
 
 class ElastiCache(object):
@@ -2434,7 +2625,10 @@ class ApiGateway(object):
                     ],
                     'binaryMediaTypes': [
                         'string',
-                    ]
+                    ],
+                    'endpointConfiguration': {
+                        'types': ['PRIVATE']
+                    }
                 },
                 {
                     'id': 'api2',
@@ -2443,7 +2637,10 @@ class ApiGateway(object):
                     'createdDate': datetime(2016, 1, 1),
                     'version': 'api2ver',
                     'warnings': [],
-                    'binaryMediaTypes': []
+                    'binaryMediaTypes': [],
+                    'endpointConfiguration': {
+                        'types': ['REGIONAL']
+                    }
                 }
             ],
             'NextToken': 'string'
@@ -2461,8 +2658,43 @@ class ApiGateway(object):
                     ],
                     'binaryMediaTypes': [
                         'string',
-                    ]
+                    ],
+                    'endpointConfiguration': {
+                        'types': ['REGIONAL']
+                    }
                 },
+                {
+                    'id': 'api4',
+                    'name': 'api4name',
+                    'description': 'api4desc',
+                    'createdDate': datetime(2017, 1, 2),
+                    'version': 'api4ver',
+                    'warnings': [
+                        'string',
+                    ],
+                    'binaryMediaTypes': [
+                        'string',
+                    ],
+                    'endpointConfiguration': {
+                        'types': ['EDGE']
+                    }
+                },
+                {
+                    'id': 'api5',
+                    'name': 'api5name',
+                    'description': 'api5desc',
+                    'createdDate': datetime(2017, 1, 2),
+                    'version': 'api5ver',
+                    'warnings': [
+                        'string',
+                    ],
+                    'binaryMediaTypes': [
+                        'string',
+                    ],
+                    'endpointConfiguration': {
+                        'types': ['EDGE']
+                    }
+                }
             ]
         }
     ]
@@ -2813,10 +3045,16 @@ class ApiGateway(object):
 
     resources_api3 = [{'items': []}]
 
+    resources_api4 = [{'items': []}]
+
+    resources_api5 = [{'items': []}]
+
     get_resources = {
         'api1': resources_api1,
         'api2': resources_api2,
-        'api3': resources_api3
+        'api3': resources_api3,
+        'api4': resources_api4,
+        'api5': resources_api5
     }
 
     doc_parts = {
@@ -2902,7 +3140,33 @@ class ApiGateway(object):
                 },
                 'properties': 'string'
             }
-        ]
+        ],
+        'api4': [
+            {
+                'id': 'string',
+                'location': {
+                    'type': 'API',
+                    'path': 'string',
+                    'method': 'string',
+                    'statusCode': 'string',
+                    'name': 'string'
+                },
+                'properties': 'string'
+            }
+        ],
+        'api5': [
+            {
+                'id': 'string',
+                'location': {
+                    'type': 'API',
+                    'path': 'string',
+                    'method': 'string',
+                    'statusCode': 'string',
+                    'name': 'string'
+                },
+                'properties': 'string'
+            }
+        ],
     }
 
     stages = {
@@ -2952,6 +3216,16 @@ class ApiGateway(object):
             'item': [
                 {'deploymentId': 'blam'},
                 {'deploymentId': 'blarg'}
+            ]
+        },
+        'api4': {
+            'item': [
+                {'deploymentId': 'baz'}
+            ]
+        },
+        'api5': {
+            'item': [
+                {'deploymentId': 'baz'}
             ]
         }
     }
@@ -3003,7 +3277,9 @@ class ApiGateway(object):
                 'authorizerResultTtlInSeconds': 123
             }
         ],
-        'api3': []
+        'api3': [],
+        'api4': [],
+        'api5': []
     }
 
     plans = [
@@ -3124,6 +3400,35 @@ class ApiGateway(object):
                     'createdDate': datetime(2015, 1, 1),
                     'expirationDate': datetime(2015, 1, 1)
                 },
+            ]
+        }
+    ]
+
+    vpc_links = [
+        {
+            'items': [
+                {
+                    'id': 'vpcl-1',
+                    'name': 'link1',
+                    'description': 'desc1',
+                    'status': 'AVAILABLE'
+                }
+            ]
+        },
+        {
+            'items': [
+                {
+                    'id': 'vpcl-2',
+                    'name': 'link2',
+                    'description': 'desc2',
+                    'status': 'AVAILABLE'
+                },
+                {
+                    'id': 'vpcl-3',
+                    'name': 'link3',
+                    'description': 'desc3',
+                    'status': 'PENDING'
+                }
             ]
         }
     ]
