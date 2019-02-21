@@ -106,7 +106,8 @@ def update_ec2_on_demand(region: str, limits: List[AwsLimit]):
 def update_service(path: str, usage: List[AwsLimitUsage], limit: int, region: str):
     g = gauge(path)
 
-    g.labels(region=region, type='limit').set(limit)
+    if limit:
+        g.labels(region=region, type='limit').set(limit)
     for resource in usage:
         metric_type = 'current'
         if resource.resource_id:
